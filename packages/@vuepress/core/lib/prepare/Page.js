@@ -85,7 +85,11 @@ module.exports = class Page {
     enhancers = [],
     preRender = {}
   }) {
+    // relative path
+    let relPath
+
     if (this._filePath) {
+      relPath = path.relative(this._context.sourceDir, this._filePath)
       logger.developer(`static_route`, chalk.cyan(this.path))
       this._content = await fs.readFile(this._filePath, 'utf-8')
     } else if (this._content) {
@@ -99,7 +103,7 @@ module.exports = class Page {
       if (this._filePath.endsWith('.md')) {
         const { excerpt, data, content } = parseFrontmatter(this._content)
         this._strippedContent = content
-        this.frontmatter = data
+        Object.assign(this.frontmatter, data)
 
         // infer title
         const title = inferTitle(this.frontmatter, this._strippedContent)
@@ -118,7 +122,10 @@ module.exports = class Page {
         }
 
         if (excerpt) {
-          const { html } = markdown.render(excerpt)
+          const { html } = markdown.render(excerpt, {
+            frontmatter: this.frontmatter,
+            relPath
+          })
           this.excerpt = html
         }
       } else if (this._filePath.endsWith('.vue')) {
@@ -231,7 +238,7 @@ module.exports = class Page {
   /**
    * Execute the page enhancers. A enhancer could do following things:
    *
-   *   1. Modify page's frontmetter.
+   *   1. Modify page's frontmatter.
    *   2. Add extra field to the page.
    *
    * @api private

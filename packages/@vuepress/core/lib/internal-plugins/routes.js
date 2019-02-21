@@ -3,25 +3,23 @@ module.exports = (options, ctx) => ({
 
   // @internal/routes
   async clientDynamicModules () {
-    const code = importCode() + routesCode(ctx.pages)
+    const code = importCode(ctx.globalLayout) + routesCode(ctx.pages)
     return { name: 'routes.js', content: code, dirname: 'internal' }
   }
 })
 
 /**
  * Import utilities
+ * @param {string} globalLayout path of global layout component
  * @returns {string}
  */
-function importCode () {
+function importCode (globalLayout) {
   return `
-import { injectComponentOption } from '@app/util'
+import { injectComponentOption, ensureAsyncComponentsLoaded } from '@app/util'
 import rootMixins from '@internal/root-mixins'
-import layoutComponents from '@internal/layout-components'
-import pageComponents from '@internal/page-components'
-import LayoutDistributor from '@app/components/LayoutDistributor.vue'
+import GlobalLayout from ${JSON.stringify(globalLayout)}
 
-injectComponentOption(LayoutDistributor, 'mixins', rootMixins)
-injectComponentOption(LayoutDistributor, 'components', Object.assign({}, layoutComponents, pageComponents))
+injectComponentOption(GlobalLayout, 'mixins', rootMixins)
 `
 }
 
@@ -34,6 +32,9 @@ function routesCode (pages) {
   function genRoute ({
     path: pagePath,
     key: componentName,
+    frontmatter: {
+      layout
+    },
     regularPath,
     _meta
   }) {
@@ -41,7 +42,10 @@ function routesCode (pages) {
   {
     name: ${JSON.stringify(componentName)},
     path: ${JSON.stringify(pagePath)},
-    component: LayoutDistributor,${_meta ? `\n    meta: ${JSON.stringify(_meta)}` : ''}
+    component: GlobalLayout,
+    beforeEnter: (to, from, next) => {
+      ensureAsyncComponentsLoaded(${JSON.stringify(layout || 'Layout')}, ${JSON.stringify(componentName)}).then(next)
+    },${_meta ? `\n    meta: ${JSON.stringify(_meta)}` : ''}
   }`
 
     const dncodedPath = decodeURIComponent(pagePath)
@@ -75,7 +79,7 @@ function routesCode (pages) {
   const notFoundRoute = `,
   {
     path: '*',
-    component: LayoutDistributor
+    component: GlobalLayout
   }`
 
   return (

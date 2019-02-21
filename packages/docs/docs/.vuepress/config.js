@@ -3,7 +3,6 @@ const container = require('markdown-it-container')
 
 module.exports = ctx => ({
   dest: '../../vuepress',
-  contentLoading: true,
   locales: {
     '/': {
       lang: 'en-US',
@@ -156,6 +155,7 @@ function getThemeSidebar (groupA, introductionA) {
     {
       title: groupA,
       collapsable: false,
+      sidebarDepth: 2,
       children: [
         ['', introductionA],
         'using-a-theme',

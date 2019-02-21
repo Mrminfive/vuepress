@@ -1,7 +1,7 @@
 const { parseVueFrontmatter: { parseStrippedFrontmatter }} = require('@vuepress/shared-utils')
 const { frontmatterEmitter } = require('@vuepress/markdown-loader')
 const LRU = require('lru-cache')
-const cache = LRU({ max: 1000 })
+const cache = new LRU({ max: 1000 })
 
 module.exports = function (source, map) {
   const isProd = process.env.NODE_ENV === 'production'
@@ -12,11 +12,11 @@ module.exports = function (source, map) {
     const cached = cache.get(file)
     const parsed = parseStrippedFrontmatter(source)
 
-    if (cached &&
-      cached.data &&
-      parsed &&
-      parsed.data &&
-      JSON.stringify(cached.data) !== JSON.stringify(parsed.data)
+    if (cached
+      && cached.data
+      && parsed
+      && parsed.data
+      && JSON.stringify(cached.data) !== JSON.stringify(parsed.data)
     ) {
       frontmatterEmitter.emit('update')
     }

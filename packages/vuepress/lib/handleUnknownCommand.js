@@ -20,8 +20,8 @@ module.exports = async function (cli, options) {
   const inferredUserDocsDirectory = await inferUserDocsDirectory(pwd)
   logger.developer('inferredUserDocsDirectory', inferredUserDocsDirectory)
 
-  const needPrepareBeforeLaunchCLI = inferredUserDocsDirectory &&
-    (isHelpFlag(argv[0]) || isUnknownCommandHelp(argv))
+  const needPrepareBeforeLaunchCLI = inferredUserDocsDirectory
+    && (isHelpFlag(argv[0]) || isUnknownCommandHelp(argv))
 
   logger.developer('needPrepareBeforeLaunchCLI', needPrepareBeforeLaunchCLI)
 
@@ -39,7 +39,7 @@ module.exports = async function (cli, options) {
 
     if (sourceDir) {
       context = await prepare(sourceDir, options)
-      context.pluginAPI.options.extendCli.apply(cli)
+      context.pluginAPI.options.extendCli.apply(cli, context)
     }
 
     logger.setOptions({ logLevel: 3 })
@@ -107,7 +107,7 @@ function registerUnknownCommands (cli, options) {
           ...options,
           ...commandoptions
         }, false /* isProd */)
-        await context.pluginAPI.options.extendCli.apply(subCli)
+        await context.pluginAPI.options.extendCli.apply(subCli, context)
       },
       async afterParse (subCli) {
         if (!subCli.matchedCommand) {

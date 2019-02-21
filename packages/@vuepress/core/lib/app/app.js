@@ -1,4 +1,4 @@
-/* global VUEPRESS_TEMP_PATH, CONTENT_LOADING */
+/* global VUEPRESS_TEMP_PATH */
 import Vue from 'vue'
 import Router from 'vue-router'
 import dataMixin from './dataMixin'
@@ -8,9 +8,10 @@ import appEnhancers from '@internal/app-enhancers'
 import globalUIComponents from '@internal/global-ui'
 import ClientComputedMixin from '@transform/ClientComputedMixin'
 import VuePress from './plugins/VuePress'
+import { handleRedirectForCleanUrls } from './redirect.js'
+import { getLayoutAsyncComponent } from './util'
 
 // built-in components
-import LoadableContent from './components/Content.vue'
 import Content from './components/Content.js'
 import ContentSlotsDistributor from './components/ContentSlotsDistributor'
 import OutboundLink from './components/OutboundLink.vue'
@@ -22,8 +23,8 @@ if (module.hot) {
   module.hot.accept(VUEPRESS_TEMP_PATH + '/internal/siteData.js', () => {
     if (siteData.base !== prevBase) {
       window.alert(
-        `[vuepress] Site base has changed. ` +
-        `Please restart dev server to ensure correct asset paths.`
+        `[vuepress] Site base has changed. `
+        + `Please restart dev server to ensure correct asset paths.`
       )
     }
   })
@@ -36,16 +37,15 @@ Vue.use(VuePress)
 // mixin for exposing $site and $page
 Vue.mixin(dataMixin(ClientComputedMixin, siteData))
 // component for rendering markdown content and setting title etc.
-if (CONTENT_LOADING) {
-  Vue.component('Content', LoadableContent)
-} else {
-  Vue.component('Content', Content)
-}
 
+Vue.component('Content', Content)
 Vue.component('ContentSlotsDistributor', ContentSlotsDistributor)
 Vue.component('OutboundLink', OutboundLink)
 // component for client-only content
 Vue.component('ClientOnly', ClientOnly)
+// core components
+Vue.component('Layout', getLayoutAsyncComponent('Layout'))
+Vue.component('NotFound', getLayoutAsyncComponent('NotFound'))
 
 // global helper for adding base path to absolute urls
 Vue.prototype.$withBase = function (path) {
@@ -66,23 +66,20 @@ export function createApp (isServer) {
     scrollBehavior (to, from, savedPosition) {
       if (savedPosition) {
         return savedPosition
-      }
-      if (to.path !== from.path) {
+      } else if (to.hash) {
+        if (Vue.$vuepress.$get('disableScrollBehavior')) {
+          return false
+        }
+        return {
+          selector: to.hash
+        }
+      } else {
         return { x: 0, y: 0 }
       }
     }
   })
 
-  // redirect /foo to /foo/
-  router.beforeEach((to, from, next) => {
-    if (!/(\/|\.html)$/.test(to.path)) {
-      next(Object.assign({}, to, {
-        path: to.path + '/'
-      }))
-    } else {
-      next()
-    }
-  })
+  handleRedirectForCleanUrls(router)
 
   const options = {}
 
