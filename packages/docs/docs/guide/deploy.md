@@ -70,6 +70,8 @@ You can also run the above script in your CI setup to enable automatic deploymen
 
 ``` yaml
 language: node_js
+node_js:
+  - lts/*
 script:
   - npm run docs:build
 deploy:
@@ -209,4 +211,4 @@ heroku open
 
 ## Now
 
-Please refer to [Deploy a example vuepress website with Now](https://zeit.co/examples/vuepress/).
+Please refer to [Deploy an example vuepress website with Now](https://zeit.co/examples/vuepress/).
